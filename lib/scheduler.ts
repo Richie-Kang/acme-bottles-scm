@@ -42,6 +42,7 @@ function poToScheduled(
     quantity: po.quantity,
     notes: po.notes,
     orderDate: po.orderDate.toISOString(),
+    createdAt: po.createdAt.toISOString(),
     expectedEta: po.expectedEta.toISOString(),
     completedAt: po.completedAt ? po.completedAt.toISOString() : null,
     status,

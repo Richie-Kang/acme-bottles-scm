@@ -15,7 +15,13 @@ export default async function OrdersPage() {
     prisma.supplyOrder.findMany({}),
   ]);
   const scheduled = computeSchedule(pos, supplies, getNow());
-  scheduled.sort((a, b) => b.orderDate.localeCompare(a.orderDate));
+  // Reverse chronological: primary by orderDate DESC, tiebreak by createdAt
+  // DESC. Without the tiebreak, multiple POs created under the same demo
+  // "now" share an orderDate and would order non-deterministically.
+  scheduled.sort((a, b) => {
+    const t = b.orderDate.localeCompare(a.orderDate);
+    return t !== 0 ? t : b.createdAt.localeCompare(a.createdAt);
+  });
 
   // ensure headers() reference so server component re-renders on nav
   void headers();

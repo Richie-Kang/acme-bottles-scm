@@ -15,7 +15,10 @@ const CreateSchema = z.object({
 
 export async function GET() {
   const orders = await prisma.purchaseOrder.findMany({
-    orderBy: { orderDate: "desc" },
+    // orderDate is the business "ordered on" date; createdAt is the real
+    // wall-clock insert time. Use createdAt as a tiebreaker so multiple POs
+    // created under the same demo "now" still sort newest-first.
+    orderBy: [{ orderDate: "desc" }, { createdAt: "desc" }],
   });
   return NextResponse.json(orders);
 }

@@ -15,6 +15,7 @@ export type ScheduledPO = {
   quantity: number;
   notes: string | null;
   orderDate: string;
+  createdAt: string;
   expectedEta: string;
   completedAt: string | null;
   status: ScheduleStatus;
