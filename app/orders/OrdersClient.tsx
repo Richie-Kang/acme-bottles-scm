@@ -48,7 +48,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: Schedul
         />
       </div>
 
-      <POTable orders={filtered} />
+      <POTable orders={filtered} allowDelete />
 
       <Modal
         open={open}

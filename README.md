@@ -117,7 +117,7 @@ All five fulfillment states are observable in a single page load.
   - `In Production` — the scheduler reports `start ≤ now < eta` (or backlog overrun for an open PO).
   - `Pending` — `now < start`, no material delay forced.
   - `Delay expected` — the scheduler had to push `start` past the line's natural cursor to wait for an incoming supply ETA.
-  - `Unable to fulfill` — even with all known incoming supplies, materials cannot cover this PO. **Blocks all downstream POs on the same line** because FIFO is a hard production constraint, not a soft preference.
+  - `Unable to fulfill` — even with all known incoming supplies, materials cannot cover this PO. Evaluated per-PO; downstream POs on the same line are evaluated independently against the remaining materials. The line cursor is not advanced for an Unable PO (no production took place), so it does not consume a slot on the line.
 - **Two ETAs, one display.** Each PO carries a snapshot `expectedEta` set at creation time (the promised date). The `(Nd late)` badge is `now − expectedEta` for an open PO whose promise has slipped. Using the live forecast ETA there would make the badge self-erase; the snapshot is intentional.
 - **Materials are a global pool.** Both production lines draw from the same `onHand` inventory and the same future-supply timeline. Per-line FIFO is preserved within each queue; across lines, the scheduler interleaves jobs by chronological cursor order. Formal invariants are documented in `CLAUDE.md`.
 - **Per-PO atomic material reservation.** When a PO is admitted, its draw from on-hand inventory and from future supplies is committed before the next PO is considered, so two POs cannot both observe the same incoming shipment as available.

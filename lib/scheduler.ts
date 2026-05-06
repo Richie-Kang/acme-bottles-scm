@@ -98,14 +98,12 @@ export function computeSchedule(
 
   const cursors: Record<Product, Date> = { ONE_LITER: now, ONE_GALLON: now };
   const indices: Record<Product, number> = { ONE_LITER: 0, ONE_GALLON: 0 };
-  const blocked: Record<Product, boolean> = { ONE_LITER: false, ONE_GALLON: false };
   const results: ScheduledPO[] = [];
 
   // 4. Walk both lines in chronological cursor order, reserving materials globally
   while (true) {
     const candidates: { line: Product; po: PurchaseOrder; cursor: Date }[] = [];
     for (const line of PRODUCTS) {
-      if (blocked[line]) continue;
       if (indices[line] < openByLine[line].length) {
         candidates.push({ line, po: openByLine[line][indices[line]], cursor: cursors[line] });
       }
@@ -157,13 +155,11 @@ export function computeSchedule(
     }
 
     if (unfulfillable) {
+      // Each PO is evaluated independently against remaining materials.
+      // The cursor is NOT advanced (no production took place) and downstream
+      // POs on the same line are NOT cascaded — they get their own evaluation.
       results.push(poToScheduled(po, "Unable to fulfill", null, null, now, false));
-      blocked[line] = true;
-      // Block all downstream POs on this line (FIFO is a hard constraint)
-      for (let j = indices[line] + 1; j < openByLine[line].length; j++) {
-        results.push(poToScheduled(openByLine[line][j], "Unable to fulfill", null, null, now, false));
-      }
-      indices[line] = openByLine[line].length;
+      indices[line]++;
       continue;
     }
 

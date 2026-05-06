@@ -18,7 +18,7 @@ Forward-deploy take-home challenge. Built and reviewed under a 4-hour timebox.
 2. **Materials are global.** Both lines draw from the same `onHand` pool plus the same future supply timeline. The scheduler interleaves both lines by chronological **cursor order** to model real factory behavior (the line that finishes its current job first picks up the next material).
 3. **Inventory baseline at `now`.** `onHand[M] = sum(received supply.kg * 1000) − sum(grams consumed by completed POs)`. Completed POs are excluded from forward simulation; their consumption is already netted out.
 4. **Material reservation is atomic per PO.** Once a PO is admitted, its draw from `onHand` and `futureByMat` is committed before the next PO is considered. No double-booking.
-5. **Unable-to-fulfill blocks downstream POs on the same line.** FIFO is a hard production constraint; we don't reorder around a blocked job. All queued POs behind an Unable PO on that line are also marked Unable.
+5. **Unable-to-fulfill is per-PO, not cascading.** Each PO is evaluated independently against remaining materials (per the PDF: "Show 'Unable to fulfill' if no existing or incoming supplies can fulfill the order"). The line cursor is NOT advanced for an Unable PO since no production occurred, but downstream POs on the same line continue to be evaluated against whatever materials remain. Treats "Unable" as a flag for human intervention rather than as a hard line lock.
 6. **Status is computed, never stored** (except `completedAt`). Recompute on every read.
 7. **Late** = `now > expectedEta && completedAt === null`. `expectedEta` is a snapshot taken at PO creation time — the *promised* date. The currently forecasted ETA may be different and is shown in the UI alongside the late badge.
 

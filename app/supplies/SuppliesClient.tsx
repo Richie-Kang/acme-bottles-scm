@@ -7,11 +7,26 @@ import CreateSupplyForm from "@/components/CreateSupplyForm";
 import MaterialTile from "@/components/MaterialTile";
 import { MATERIAL_LABEL, MATERIALS } from "@/lib/constants";
 import { formatDateShort, formatQty } from "@/lib/format";
-import type { SuppliesResponse } from "@/lib/types";
+import type { SuppliesResponse, SupplyOrderDTO } from "@/lib/types";
 
 export default function SuppliesClient({ data }: { data: SuppliesResponse }) {
   const [open, setOpen] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const router = useRouter();
+
+  async function onDelete(o: SupplyOrderDTO) {
+    if (!confirm(`Delete supply order ${MATERIAL_LABEL[o.material]} ${formatQty(o.quantityKg)}kg from ${o.supplier}?`)) return;
+    setDeleting(o.id);
+    try {
+      const r = await fetch(`/api/supplies/${o.id}`, { method: "DELETE" });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      router.refresh();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setDeleting(null);
+    }
+  }
 
   return (
     <>
@@ -56,11 +71,12 @@ export default function SuppliesClient({ data }: { data: SuppliesResponse }) {
               <th className="text-left font-medium px-3 py-3">Order Date</th>
               <th className="text-left font-medium px-3 py-3">ETA</th>
               <th className="text-left font-medium px-3 py-3">Status</th>
+              <th className="text-right font-medium px-3 py-3 w-12"></th>
             </tr>
           </thead>
           <tbody>
             {data.orders.map((o) => (
-              <tr key={o.id} className="border-t border-white/8 hover:bg-white/5 transition">
+              <tr key={o.id} className="border-t border-white/8 hover:bg-white/5 transition group">
                 <td className="px-3 py-4 text-white/90">{MATERIAL_LABEL[o.material]}</td>
                 <td className="px-3 py-4 text-right text-white/90">{formatQty(o.quantityKg)} kg</td>
                 <td className="px-3 py-4 text-white/80">{o.supplier}</td>
@@ -77,6 +93,18 @@ export default function SuppliesClient({ data }: { data: SuppliesResponse }) {
                       Ordered
                     </span>
                   )}
+                </td>
+                <td className="px-3 py-4 text-right">
+                  <button
+                    type="button"
+                    onClick={() => onDelete(o)}
+                    disabled={deleting === o.id}
+                    className="opacity-0 group-hover:opacity-100 transition text-white/50 hover:text-rose-300 disabled:opacity-30 text-sm"
+                    title="Delete this supply order"
+                    aria-label={`Delete supply order from ${o.supplier}`}
+                  >
+                    {deleting === o.id ? "…" : "✕"}
+                  </button>
                 </td>
               </tr>
             ))}
