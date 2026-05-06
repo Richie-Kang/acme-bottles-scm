@@ -123,7 +123,7 @@ All five fulfillment states are observable in a single page load.
 - **Per-PO atomic material reservation.** When a PO is admitted, its draw from on-hand inventory and from future supplies is committed before the next PO is considered, so two POs cannot both observe the same incoming shipment as available.
 - **Glassmorphism UI.** A single recipe — `backdrop-blur-xl bg-white/[0.06]` over a fixed gradient background — is encapsulated in `<GlassCard>` and reused throughout.
 
-### Tradeoffs taken — prioritization for the 4-hour budget
+### Tradeoffs taken — prioritization for the 3-hour budget
 
 The dominant constraint of this exercise is shipping a GitHub repository, a working database, and a live URL within four hours. Stack choices were therefore made on a single criterion: which combination of tools composes with the fewest configuration steps. The result is a deliberate optimization for **time-to-deployment**, not for breadth of features.
 
