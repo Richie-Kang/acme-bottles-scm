@@ -12,6 +12,26 @@ Tracks Purchase Orders and Supply Orders for a plastic bottle manufacturer (1L a
 
 ---
 
+## Table of contents
+
+- [Demo video](#demo-video)
+- [30-second sanity check](#30-second-sanity-check)
+- [Assignment requirements](#assignment-requirements)
+- [API endpoints](#api-endpoints)
+- [Architecture & design decisions](#architecture--design-decisions)
+- [Local setup](#local-setup-optional)
+- [Tools and prompts — Cross-Model Validation](#tools-and-prompts--cross-model-validation)
+
+---
+
+## Demo video
+
+[![ACME Bottles SCM — walkthrough](https://img.youtube.com/vi/mSeyNviS3_0/maxresdefault.jpg)](https://youtu.be/mSeyNviS3_0)
+
+Click the thumbnail to watch a walkthrough on YouTube — covers the production-status page, FIFO + capacity-based scheduling, and how the schedule re-computes when a new supply order arrives.
+
+---
+
 ## 30-second sanity check
 
 1. Open **https://acme-bottles-scm.vercel.app** — it redirects to `/production`.
@@ -25,7 +45,7 @@ If those four items hold, the system is up, persisting through a real database, 
 
 ---
 
-## Assignment requirements — verification matrix
+## Assignment requirements
 
 Each row maps one assignment requirement to the URL or action that verifies it on the deployed app. Seed data is dimensioned so all five fulfillment statuses are visible simultaneously when the demo "now" is `2026-02-17T12:00:00Z`.
 
@@ -66,7 +86,7 @@ Each row maps one assignment requirement to the URL or action that verifies it o
 
 ---
 
-## API endpoints (raw JSON)
+## API endpoints
 
 ```bash
 # Full schedule with computed status / start / eta / lateDays per PO
@@ -81,30 +101,6 @@ curl https://acme-bottles-scm.vercel.app/api/supplies | jq
 # Override the demo "now" via query parameter
 curl 'https://acme-bottles-scm.vercel.app/api/production?now=2026-03-01T00:00:00Z' | jq
 ```
-
-Canonical seed result at `now=2026-02-17T12:00:00Z`:
-
-| PO | Status | Late |
-|---|---|---|
-| PO-2026-001 | Completed | — |
-| PO-2026-002 | Completed | — |
-| PO-2026-003 | In Production | 11 days |
-| PO-2026-004 | In Production | 3 days |
-| PO-2026-005 | **Unable to fulfill** | — |
-| PO-2026-006 | **Delay expected** | — |
-| PO-2026-007 | Pending | — |
-
-All five fulfillment states are observable in a single page load.
-
----
-
-## One-minute demo flow
-
-1. `/production` — five statuses visible on a single page; the in-production cards carry red "Nd overdue" badges.
-2. `/orders` → `+ Create New PO` (1L Bottle, 10,000 units, any customer name) — new PO appears at the top of the table.
-3. Return to `/production` — the new PO joins the 1L line queue with an automatically computed ETA.
-4. `/supplies` → `+ Create New Order` (e.g. EG, 1,500 kg, ETA tomorrow) → Place Order.
-5. Return to `/production` — the new EG arrival flows into the scheduler. PO-2026-005 may flip from `Unable to fulfill` to `Delay expected` or `Pending`, with downstream POs re-sequenced accordingly.
 
 ---
 
@@ -125,27 +121,25 @@ All five fulfillment states are observable in a single page load.
 
 ### Tradeoffs taken — prioritization for the 3-hour budget
 
-The dominant constraint of this exercise is shipping a GitHub repository, a working database, and a live URL within four hours. Stack choices were therefore made on a single criterion: which combination of tools composes with the fewest configuration steps. The result is a deliberate optimization for **time-to-deployment**, not for breadth of features.
+The dominant constraint of this exercise is shipping a GitHub repository, a working database, and a live URL within three hours. Stack choices were therefore made on a single criterion: which combination of tools composes with the fewest configuration steps. The result is a deliberate optimization for **time-to-deployment**, not for breadth of features.
 
-- **Next.js 15 + Vercel** — frontend pages and API routes ship as a single artifact, so there is no separate backend service to provision or deploy. A `git push` triggers a complete deploy with preview and production environments out of the box. This is the shortest known path to a live URL within the budget.
-- **Neon (via Vercel marketplace)** — `vercel integration add neon` performs a one-step provision that injects `DATABASE_URL` into every environment automatically. There is no separate console, user creation, or secret-management step. This collapses database provisioning from minutes to seconds and is the single largest time saving in the deployment phase.
+- **Next.js 15 + Vercel** — frontend pages and API routes ship as a single artifact, so there is no separate backend service to provision or deploy. A `git push` triggers a complete deploy with preview and production environments out of the box. The shortest known path to a live URL within the budget.
+- **Neon (via Vercel marketplace)** — `vercel integration add neon` performs a one-step provision that injects `DATABASE_URL` into every environment automatically. No separate console, user creation, or secret-management step. Collapses database provisioning from minutes to seconds and is the single largest time saving in the deployment phase.
 - **Prisma** — one schema file produces both the migration and a type-safe client. Hand-rolling SQL plus type definitions plus runtime mappers would consume an hour or more; Prisma compresses that into a single declaration.
 - **Tailwind v3 (not v4)** — v4 changes the PostCSS plugin contract and carries setup risk. v3 is a stable, well-understood path to the same visual outcome and was chosen to eliminate that variance.
 - **Custom modal instead of shadcn/ui** — adopting shadcn would have introduced the generator workflow plus Radix dependencies. The modal complexity here is low enough that a hand-written component is faster.
-- **No automated test suite** — instead, `scripts/trace-scheduler.ts` produces deterministic scheduler output against the canonical seed, traceable by hand against the documented expected-output table. The CI regression net is the explicit trade-off; the algorithm's hand-traceability is preserved.
+- **No automated test suite** — instead, `scripts/trace-scheduler.ts` produces deterministic scheduler output against the canonical seed, hand-traceable against the documented expected-output table. CI regression coverage is the explicit trade-off; algorithm hand-traceability is preserved.
 - **No `mockNow` configuration table** — the demo "now" is controlled by `lib/now.ts` and an optional `?now=ISO` query parameter, keeping the database schema minimal.
 - **Customer is a free-text field** — a Customer entity with relationship management was deliberately scoped out as outside the assignment.
 
 ### Known limitations
 
-- The scheduler interleaves work across lines by **cursor time**, not by global FIFO. When two lines compete for a scarce material, the line that finishes first will claim it, even if its PO was ordered later. This faithfully models a real factory but can be counterintuitive from a customer-promise perspective. A "global FIFO across shared materials" reservation pass would be a worthwhile follow-up.
-- `lateDays` is computed against the snapshotted `expectedEta` taken at PO creation. Re-seeding after the demo "now" advances will require refreshing those snapshots to keep the lateness display meaningful.
+- Cross-line scheduling is interleaved by cursor time rather than by global FIFO, so when two lines compete for a scarce material the line that finishes first can claim it ahead of an earlier-ordered PO on the other line.
+- `lateDays` is anchored to the `expectedEta` snapshot taken at PO creation. Re-seeding after the demo "now" advances will require refreshing those snapshots.
 
 ---
 
 ## Local setup (optional)
-
-Prerequisites: Node ≥ 20 and a Postgres database. Neon's free tier is the easiest path.
 
 ```bash
 git clone https://github.com/Richie-Kang/acme-bottles-scm.git
@@ -157,20 +151,7 @@ npx prisma db seed
 npm run dev                      # http://localhost:3000
 ```
 
-### Auxiliary scripts
-
-```bash
-npx tsx scripts/trace-scheduler.ts     # standalone scheduler trace against canonical seed
-npx prisma studio                      # browse the database
-npx prisma db seed                     # re-seed (deletes all rows first)
-DATABASE_URL=... npx prisma migrate deploy   # apply migrations to a remote database
-```
-
-### Deployment notes
-
-- **Vercel + Neon.** Provisioning Neon through Vercel's marketplace integration auto-injects `DATABASE_URL` into all environments.
-- **Build command:** `prisma generate && prisma migrate deploy && next build` (already wired in `package.json`).
-- **Production seeding:** run `DATABASE_URL=<prod> npx prisma db seed` once locally after the first deploy. Seeding is intentionally not part of the Vercel build, since that would re-seed and overwrite data on every redeploy.
+Production deploys provision Neon through Vercel's marketplace integration so `DATABASE_URL` is auto-injected. The Vercel build command is `prisma generate && prisma migrate deploy && next build`. Seeding is intentionally not part of the build to avoid overwriting data on every redeploy; run `DATABASE_URL=<prod> npx prisma db seed` once locally after the first deploy.
 
 ---
 
@@ -181,19 +162,15 @@ A central message of this submission is **how to mitigate hallucination in AI-as
 - **Generation: Claude Opus 4.7** (Anthropic) — produced the implementation plan, scheduler, API routes, and UI.
 - **Adversarial review: GPT-5.x via the Codex CLI** (OpenAI) — critiqued both the v1 plan and the final code as an adversary, surfacing correctness defects the generator did not catch.
 
-### Major prompts and review outcomes
+### Prompts and review outcomes
 
-1. **Plan v1 generation** (Claude) — "Design an implementation plan for a 4-hour FDE take-home: ACME Bottles, 2 products / 2 lines / 3 materials, FIFO scheduling, glassmorphism UI."
-2. **Adversarial review of plan v1** (Codex) — "Find correctness bugs, missing edge cases, and deployment landmines. Focus on the FIFO scheduler with global materials, the late-detection rule, and Vercel + Prisma deploy."
-   - **24 issues identified, 8 of which were correctness defects** in the scheduler and status semantics that would have shipped silently.
-3. **Plan v2** — incorporated the 8 correctness fixes from the review:
-   - Replaced the v1 rule "Completed = `eta < now`" with an explicit `completedAt` field, so a "late and unfinished" PO is no longer mis-classified as Completed.
-   - Split `expectedEta` into a snapshot at PO creation, so the late badge does not self-erase as the live forecast ETA slides forward.
-   - Redefined per-line independent FIFO with a global material pool into chronological cross-line interleaving with atomic per-PO material reservation, eliminating double-booking of incoming supplies.
-   - Added the rule that an "Unable to fulfill" PO blocks all downstream POs on the same line, preserving FIFO as a hard constraint.
-   - Removed `prisma db seed` from the Vercel build pipeline to prevent data overwrite on every redeploy.
-4. **Code generation** — Claude wrote the implementation against the v2 plan.
-5. **Adversarial code review** — Codex re-read the final implementation for residual correctness or security issues.
+1. **Plan v1** (Claude) — initial implementation plan covering the scheduler, status semantics, stack, and seed data.
+2. **Adversarial review** (Codex) — surfaced **24 issues, 8 of them correctness defects** in the scheduler and status semantics, including:
+   - "Completed = `eta < now`" wrongly classified late-and-unfinished POs as Completed → replaced with explicit `completedAt`.
+   - Live ETA driving the late badge produced a self-erasing badge → replaced with a snapshot `expectedEta`.
+   - Per-line FIFO with a global material pool double-booked future supplies → replaced with cross-line cursor interleaving plus atomic per-PO reservation.
+   - `prisma db seed` in the Vercel build pipeline would overwrite production data on every redeploy → removed from the build.
+3. **Code generation + final review** — Claude wrote the v2 implementation; Codex re-read the final diff for residual correctness or security issues.
 
 ### Why this matters
 
