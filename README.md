@@ -1,74 +1,72 @@
 # ACME Bottles — Supply Chain & Production System
 
-Tracks Purchase Orders and Supply Orders for a plastic bottle manufacturer (1L + 1-Gallon) and computes ETA + fulfillment status using a FIFO scheduler that respects per-line capacity AND global material availability.
+Tracks Purchase Orders and Supply Orders for a plastic bottle manufacturer (1L and 1-Gallon products) and computes ETA and fulfillment status using a FIFO scheduler that respects per-line capacity and global material availability.
 
 | | |
 |---|---|
-| 🌐 **Live demo** | **https://acme-bottles-scm.vercel.app** |
-| 📦 Source | https://github.com/Richie-Kang/acme-bottles-scm |
-| 🗄️ Database | Neon Postgres (provisioned via Vercel marketplace, real persistence) |
+| **Live demo** | **https://acme-bottles-scm.vercel.app** |
+| Source | https://github.com/Richie-Kang/acme-bottles-scm |
+| Database | Neon Postgres, provisioned via the Vercel marketplace integration |
 
-> **Reviewer note:** No setup needed. Open the live URL and the verification checklist below — every PDF requirement is checkable by clicking through the deployed app. Local-run instructions are at the bottom.
-
----
-
-## ✅ 30-second sanity check
-
-1. Open **https://acme-bottles-scm.vercel.app** → it redirects to `/production`.
-2. Confirm the page shows:
-   - "IN PRODUCTION NOW (2/2 slots)" with two glassmorphism cards (PO-2026-003 and PO-2026-004)
-   - Below, a table with **all 5 status states visible at once**: `Completed`, `In Production`, `Pending`, `Delay expected`, `Unable to fulfill`
-3. Click **Purchase Orders** in the sidebar → POs listed newest-first.
-4. Click **Supplies** → 3 material tiles (PET Resin, PTA, EG) with received vs in-transit kg.
-
-If those four points hold, the system is up and persisting from a real DB.
+> **Reviewer guidance** — every assignment requirement can be verified against the deployed app without local setup. Open the live URL and follow the verification matrix below. Local-run instructions are kept at the bottom of this document.
 
 ---
 
-## 📋 PDF requirements — verification matrix
+## 30-second sanity check
 
-Each row is something the PDF asks for, with the exact URL/action to verify it on the deployed app. The seed data is dimensioned so that **all five fulfillment statuses appear simultaneously** when the demo "now" = `2026-02-17T12:00:00Z`.
+1. Open **https://acme-bottles-scm.vercel.app** — it redirects to `/production`.
+2. Confirm:
+   - Top of the page: "IN PRODUCTION NOW (2/2 slots)" with two glassmorphism cards (PO-2026-003 and PO-2026-004).
+   - Below: a single table where all five status states are visible at once — `Completed`, `In Production`, `Pending`, `Delay expected`, `Unable to fulfill`.
+   - Sidebar **Purchase Orders** — listed newest-first.
+   - Sidebar **Supplies** — three material tiles for PET Resin, PTA, and EG with received vs in-transit quantities.
+
+If those four items hold, the system is up, persisting through a real database, and ready for end-to-end review.
+
+---
+
+## Assignment requirements — verification matrix
+
+Each row maps one assignment requirement to the URL or action that verifies it on the deployed app. Seed data is dimensioned so all five fulfillment statuses are visible simultaneously when the demo "now" is `2026-02-17T12:00:00Z`.
 
 ### Documentation
-| Requirement | How to verify |
+| Requirement | Where to verify |
 |---|---|
-| README explains design decisions | This file → "Architecture & design decisions" section below |
-| README explains tools used | This file → "Tools and prompts" section below |
-| README explains how to run/navigate | This file → "30-second sanity check" above + "Local setup" below |
+| Design decisions explained | This file → "Architecture & design decisions" |
+| Tools used explained | This file → "Tools and prompts — Cross-Model Validation" |
+| How to run and navigate | This file → "30-second sanity check" above + "Local setup" below |
 
 ### Purchase Orders
-| Requirement | URL / action | Expected |
+| Requirement | URL / action | Expected result |
 |---|---|---|
-| Create a new Purchase Order, persist to DB | https://acme-bottles-scm.vercel.app/orders → click `+ Create New PO`, fill in any customer / product / quantity → `Create PO` | Modal closes, new PO appears at top of table with auto-generated `PO-2026-NNN` number; refresh page → still there (DB-persisted) |
-| List in reverse chronological order (newest first) | https://acme-bottles-scm.vercel.app/orders | Top row is `PO-2026-007` (Feb 16) → descending by Order Date down to `PO-2026-001` (Jan 5) |
+| Create a Purchase Order, persist to the database | https://acme-bottles-scm.vercel.app/orders → click `+ Create New PO` → enter customer, product, quantity → `Create PO` | Modal closes; new PO appears at the top of the table with auto-generated `PO-2026-NNN` number; survives a hard refresh (database-backed). |
+| List in reverse chronological order (newest first) | https://acme-bottles-scm.vercel.app/orders | First row `PO-2026-007` (Feb 16) descending by Order Date through `PO-2026-001` (Jan 5). |
 
 ### Supply Orders
-| Requirement | URL / action | Expected |
+| Requirement | URL / action | Expected result |
 |---|---|---|
-| Create a supply order with PET Resin / PTA / EG | https://acme-bottles-scm.vercel.app/supplies → `+ Create New Order`, choose Material, kg, ETA → `Place Order` | All 3 materials selectable; new row appears in table |
-| List in reverse chronological order | https://acme-bottles-scm.vercel.app/supplies | Top supply order date `2026-02-08`, descending to `2026-01-01` |
+| Create a supply order with PET Resin / PTA / EG | https://acme-bottles-scm.vercel.app/supplies → `+ Create New Order` → choose Material, kg, ETA → `Place Order` | All three materials selectable in the dropdown; new row appears in the table. |
+| List in reverse chronological order | https://acme-bottles-scm.vercel.app/supplies | Top order date `2026-02-08` descending to `2026-01-01`. |
 
-### Production Status (the core deliverable)
-| Requirement | Where to look | Expected |
+### Production Status (core deliverable)
+| Requirement | Where to verify | Expected result |
 |---|---|---|
-| Show what is currently in production on both lines | https://acme-bottles-scm.vercel.app/production → top "IN PRODUCTION NOW" section | "(2/2 slots)" indicator, two cards: `PO-2026-003 FreshFlow Dairy` (1L line) and `PO-2026-004 SunSip Beverages` (1G line) |
-| List upcoming POs in FIFO order | Same page → "ALL PURCHASE ORDERS" table | POs sorted by PO Number ascending; within each line FIFO is preserved by `orderDate ASC` |
-| Display each order's expected start (calculated) | Same table, "Expected Start" column | PO-2026-005 / PO-2026-007 show calculated future dates; PO-2026-003 / PO-2026-004 show "Started" (already running) |
-| Display each order's ETA (calculated) | Same table, "ETA" column | Open POs show ETA dates; Completed POs show "—" |
-| Show "Delay expected" with updated completion date based on incoming supply ETAs | Same table, look at PO-2026-006 row | Status badge = `Delay expected` (orange); start date pushed to `Feb 25` (waiting on EG shipment ETA Feb 25) |
-| Show "Unable to fulfill" if no existing or incoming supplies cover the order | Same table, look at PO-2026-005 row | Status badge = `Unable to fulfill` (red); even with all known incoming EG, materials are short |
-| Lateness for promised dates | Look at PO-2026-003 and PO-2026-004 ETA columns | Red text: `Feb 6, 2026 (11d late)` and `Feb 14, 2026 (3d late)` — `now` is Feb 17 |
+| Show what is currently in production on both lines | https://acme-bottles-scm.vercel.app/production → top "IN PRODUCTION NOW" section | "(2/2 slots)" indicator with two cards: `PO-2026-003 FreshFlow Dairy` (1L line) and `PO-2026-004 SunSip Beverages` (1G line). |
+| List upcoming POs in FIFO order | "ALL PURCHASE ORDERS" table | Within each line, POs are sorted by `orderDate ASC`. |
+| Display calculated expected start date | "Expected Start" column | PO-2026-005 / PO-2026-007 show calculated future start dates; in-flight POs show "Started". |
+| Display calculated ETA | "ETA" column | Open POs show ETA values; Completed POs show "—". |
+| Show "Delay expected" with a completion date based on incoming supply ETAs | PO-2026-006 row | Status badge `Delay expected` (orange); start pushed to Feb 25 to wait for the EG shipment ETA Feb 25. |
+| Show "Unable to fulfill" if no existing or incoming supplies cover the order | PO-2026-005 row | Status badge `Unable to fulfill` (red); even with all known incoming supplies, materials are short. |
+| Lateness against the promised date | PO-2026-003 / PO-2026-004 ETA column | `Feb 6, 2026 (11d late)` and `Feb 14, 2026 (3d late)` against demo "now" of Feb 17. |
 
-### Database connection
-| Requirement | How to verify |
+### Database
+| Requirement | Where to verify |
 |---|---|
-| Working DB connection | The whole app reads/writes Neon Postgres in real time. Click `+ Create New PO` → refresh → row persists. Or hit `curl https://acme-bottles-scm.vercel.app/api/purchase-orders` and see live data. |
+| Working database connection | The entire app reads from and writes to Neon Postgres in real time. Create a PO, refresh, observe persistence. Or `curl https://acme-bottles-scm.vercel.app/api/purchase-orders` for live JSON. |
 
 ---
 
-## 🔍 API endpoints (copy-paste curl)
-
-If you'd rather inspect raw JSON:
+## API endpoints (raw JSON)
 
 ```bash
 # Full schedule with computed status / start / eta / lateDays per PO
@@ -79,16 +77,12 @@ curl https://acme-bottles-scm.vercel.app/api/purchase-orders | jq
 
 # Supply orders + per-material totals
 curl https://acme-bottles-scm.vercel.app/api/supplies | jq
-```
 
-You can also override the demo "now" via query param:
-
-```bash
-# See the schedule as it would look on Mar 1, 2026
+# Override the demo "now" via query parameter
 curl 'https://acme-bottles-scm.vercel.app/api/production?now=2026-03-01T00:00:00Z' | jq
 ```
 
-Every status state appears in the canonical seed at `now=2026-02-17T12:00:00Z`:
+Canonical seed result at `now=2026-02-17T12:00:00Z`:
 
 | PO | Status | Late |
 |---|---|---|
@@ -100,92 +94,107 @@ Every status state appears in the canonical seed at `now=2026-02-17T12:00:00Z`:
 | PO-2026-006 | **Delay expected** | — |
 | PO-2026-007 | Pending | — |
 
----
-
-## 🎬 Suggested 1-minute demo flow
-
-1. Open **`/production`** → all 5 statuses visible at once, two production-line cards at the top with red "Nd overdue" badges.
-2. Open **`/orders`** → search bar + newest-first table. Click `+ Create New PO` (1L Bottle, 10000 units, any customer name) → confirm new PO appears at top.
-3. Back to **`/production`** → the new PO is queued behind PO-2026-005 in the 1L line, with an automatically computed ETA.
-4. Open **`/supplies`** → 3 material tiles, then `+ Create New Order` (e.g. EG, 1500 kg, ETA tomorrow). Place order.
-5. Back to **`/production`** → see how the new EG arrival affects scheduling (PO-2026-005 may flip from `Unable to fulfill` to `Delay expected`, downstream POs also re-sequenced).
+All five fulfillment states are observable in a single page load.
 
 ---
 
-## 🏗️ Architecture & design decisions
+## One-minute demo flow
 
-- **Stack:** Next.js 15 App Router (TypeScript, React Server Components) + Prisma + Postgres (Neon) + Tailwind v3. Single artifact, deployed on Vercel.
-- **Scheduler is computed on read.** No materialized schedule table. `lib/scheduler.ts` runs on every `GET /api/production` against the latest POs/supplies snapshot. Cheap (≤ tens of POs) and avoids the staleness/drift problems of a stored schedule.
+1. `/production` — five statuses visible on a single page; the in-production cards carry red "Nd overdue" badges.
+2. `/orders` → `+ Create New PO` (1L Bottle, 10,000 units, any customer name) — new PO appears at the top of the table.
+3. Return to `/production` — the new PO joins the 1L line queue with an automatically computed ETA.
+4. `/supplies` → `+ Create New Order` (e.g. EG, 1,500 kg, ETA tomorrow) → Place Order.
+5. Return to `/production` — the new EG arrival flows into the scheduler. PO-2026-005 may flip from `Unable to fulfill` to `Delay expected` or `Pending`, with downstream POs re-sequenced accordingly.
+
+---
+
+## Architecture & design decisions
+
+- **Stack:** Next.js 15 App Router (TypeScript, React Server Components) + Prisma + Postgres (Neon) + Tailwind v3. Single artifact deployed to Vercel.
+- **The scheduler is computed on read.** No materialized schedule table. `lib/scheduler.ts` runs on every `GET /api/production` against the latest PO and supply snapshot. Cheap (≤ tens of POs) and avoids the staleness and drift problems of a stored schedule.
 - **Status semantics**:
-  - `Completed` = explicit `completedAt` set on PO. Never derived from "ETA in the past."
-  - `In Production` = scheduler says `start ≤ now < eta` (or backlog overrun for an open PO).
-  - `Pending` = `now < start`, no material delay forced.
-  - `Delay expected` = scheduler had to push `start` past the line's natural cursor to wait for an incoming supply ETA.
-  - `Unable to fulfill` = even with all known incoming supplies, materials cannot cover this PO. **Blocks all downstream POs on the same line** (FIFO is a hard constraint).
-- **Two ETAs, one display.** Each PO carries a snapshot `expectedEta` set at creation time (the promised date). The `(Nd late)` badge is `now − expectedEta` when an open PO has slipped past its promise. Using the live computed ETA there would create a self-erasing late badge.
-- **Materials are a global pool.** Both production lines consume from the same `onHand` inventory and the same future-supply timeline. Per-line FIFO is preserved within each queue; across lines, the scheduler interleaves jobs by chronological cursor order. See `CLAUDE.md` for the formal invariants.
-- **Atomic material reservation per PO.** When a PO is admitted, its draw from on-hand and future supplies is committed before the next PO is considered, so two POs cannot both "see" the same incoming shipment as available.
-- **Glassmorphism UI.** Single recipe — `backdrop-blur-xl bg-white/[0.06]` over a fixed gradient background — applied via `<GlassCard>` and reused everywhere.
+  - `Completed` — explicit `completedAt` set on the PO. Never derived from "ETA in the past."
+  - `In Production` — the scheduler reports `start ≤ now < eta` (or backlog overrun for an open PO).
+  - `Pending` — `now < start`, no material delay forced.
+  - `Delay expected` — the scheduler had to push `start` past the line's natural cursor to wait for an incoming supply ETA.
+  - `Unable to fulfill` — even with all known incoming supplies, materials cannot cover this PO. **Blocks all downstream POs on the same line** because FIFO is a hard production constraint, not a soft preference.
+- **Two ETAs, one display.** Each PO carries a snapshot `expectedEta` set at creation time (the promised date). The `(Nd late)` badge is `now − expectedEta` for an open PO whose promise has slipped. Using the live forecast ETA there would make the badge self-erase; the snapshot is intentional.
+- **Materials are a global pool.** Both production lines draw from the same `onHand` inventory and the same future-supply timeline. Per-line FIFO is preserved within each queue; across lines, the scheduler interleaves jobs by chronological cursor order. Formal invariants are documented in `CLAUDE.md`.
+- **Per-PO atomic material reservation.** When a PO is admitted, its draw from on-hand inventory and from future supplies is committed before the next PO is considered, so two POs cannot both observe the same incoming shipment as available.
+- **Glassmorphism UI.** A single recipe — `backdrop-blur-xl bg-white/[0.06]` over a fixed gradient background — is encapsulated in `<GlassCard>` and reused throughout.
 
-### Tradeoffs taken (4-hour budget)
+### Tradeoffs taken — prioritization for the 4-hour budget
 
-- **No automated test suite.** Scheduler correctness is verified by a hand-traceable script (`npx tsx scripts/trace-scheduler.ts`) that prints the schedule for the canonical seed and is checked against a documented expected-output table.
-- **No mockNow Config table.** Demo "now" lives in `lib/now.ts` + `?now=ISO` query param. Keeps the schema small.
-- **Custom modal, not shadcn.** Saves the Tailwind-v4 / shadcn install dance.
-- **Customer is free-text.** No customer entity or relationship management.
-- **Seed deliberately includes one "Unable to fulfill" PO** to demo the scarcest-status path end-to-end.
+The dominant constraint of this exercise is shipping a GitHub repository, a working database, and a live URL within four hours. Stack choices were therefore made on a single criterion: which combination of tools composes with the fewest configuration steps. The result is a deliberate optimization for **time-to-deployment**, not for breadth of features.
+
+- **Next.js 15 + Vercel** — frontend pages and API routes ship as a single artifact, so there is no separate backend service to provision or deploy. A `git push` triggers a complete deploy with preview and production environments out of the box. This is the shortest known path to a live URL within the budget.
+- **Neon (via Vercel marketplace)** — `vercel integration add neon` performs a one-step provision that injects `DATABASE_URL` into every environment automatically. There is no separate console, user creation, or secret-management step. This collapses database provisioning from minutes to seconds and is the single largest time saving in the deployment phase.
+- **Prisma** — one schema file produces both the migration and a type-safe client. Hand-rolling SQL plus type definitions plus runtime mappers would consume an hour or more; Prisma compresses that into a single declaration.
+- **Tailwind v3 (not v4)** — v4 changes the PostCSS plugin contract and carries setup risk. v3 is a stable, well-understood path to the same visual outcome and was chosen to eliminate that variance.
+- **Custom modal instead of shadcn/ui** — adopting shadcn would have introduced the generator workflow plus Radix dependencies. The modal complexity here is low enough that a hand-written component is faster.
+- **No automated test suite** — instead, `scripts/trace-scheduler.ts` produces deterministic scheduler output against the canonical seed, traceable by hand against the documented expected-output table. The CI regression net is the explicit trade-off; the algorithm's hand-traceability is preserved.
+- **No `mockNow` configuration table** — the demo "now" is controlled by `lib/now.ts` and an optional `?now=ISO` query parameter, keeping the database schema minimal.
+- **Customer is a free-text field** — a Customer entity with relationship management was deliberately scoped out as outside the assignment.
 
 ### Known limitations
 
-- The scheduler interleaves cross-line work by **cursor time**, not by global FIFO. So when two lines compete for a scarce material, the line that frees up first wins, even if its PO was ordered later. Mechanically faithful to a real factory, but a "global FIFO across shared materials" reservation pass would be a worthwhile follow-up.
-- Late status uses a snapshotted `expectedEta` from PO creation. Re-seeding after demo "now" has advanced will require refreshing those snapshots.
+- The scheduler interleaves work across lines by **cursor time**, not by global FIFO. When two lines compete for a scarce material, the line that finishes first will claim it, even if its PO was ordered later. This faithfully models a real factory but can be counterintuitive from a customer-promise perspective. A "global FIFO across shared materials" reservation pass would be a worthwhile follow-up.
+- `lateDays` is computed against the snapshotted `expectedEta` taken at PO creation. Re-seeding after the demo "now" advances will require refreshing those snapshots to keep the lateness display meaningful.
 
 ---
 
-## 💻 Local setup (optional — only if you want to run it yourself)
+## Local setup (optional)
 
-Prerequisites: Node ≥ 20, a Postgres database (Neon free tier is easiest).
+Prerequisites: Node ≥ 20 and a Postgres database. Neon's free tier is the easiest path.
 
 ```bash
 git clone https://github.com/Richie-Kang/acme-bottles-scm.git
 cd acme-bottles-scm
-cp .env.example .env             # paste your Postgres URL into DATABASE_URL
+cp .env.example .env             # set DATABASE_URL to your Postgres connection string
 npm install
 npx prisma migrate dev --name init
 npx prisma db seed
 npm run dev                      # http://localhost:3000
 ```
 
-### Useful scripts
+### Auxiliary scripts
 
 ```bash
 npx tsx scripts/trace-scheduler.ts     # standalone scheduler trace against canonical seed
-npx prisma studio                      # browse the DB
+npx prisma studio                      # browse the database
 npx prisma db seed                     # re-seed (deletes all rows first)
-DATABASE_URL=... npx prisma migrate deploy   # apply migrations to a remote DB
+DATABASE_URL=... npx prisma migrate deploy   # apply migrations to a remote database
 ```
 
 ### Deployment notes
 
-- **Vercel + Neon.** Provision Neon through Vercel's marketplace integration so `DATABASE_URL` is auto-injected.
+- **Vercel + Neon.** Provisioning Neon through Vercel's marketplace integration auto-injects `DATABASE_URL` into all environments.
 - **Build command:** `prisma generate && prisma migrate deploy && next build` (already wired in `package.json`).
-- **Seeding production:** run `DATABASE_URL=<prod> npx prisma db seed` once locally after the first deploy. Seed is **not** wired into the Vercel build because that would re-seed (and overwrite) on every redeploy.
+- **Production seeding:** run `DATABASE_URL=<prod> npx prisma db seed` once locally after the first deploy. Seeding is intentionally not part of the Vercel build, since that would re-seed and overwrite data on every redeploy.
 
 ---
 
-## 🤖 Tools and prompts (per challenge instructions)
+## Tools and prompts — Cross-Model Validation
 
-This submission was written using **two distinct LLMs in tandem** to mitigate single-model hallucination:
+A central message of this submission is **how to mitigate hallucination in AI-assisted code generation**. When a single model both generates and reviews its own work, it shares its own cognitive blind spots with itself, and the most consequential defects pass undetected. This submission is structured around a deliberate **cross-model validation** pattern: generation and adversarial review are performed by **different model families**, on the assumption that their shared blind spots are smaller than either model's blind spots in isolation.
 
-- **Generation: Claude Opus 4.7** (Anthropic) — wrote the implementation plan, scheduler, API routes, and UI.
-- **Adversarial review: GPT-5.x via Codex CLI** (OpenAI) — reviewed both the v1 plan and the final code as a critic, surfacing correctness bugs the generator missed.
+- **Generation: Claude Opus 4.7** (Anthropic) — produced the implementation plan, scheduler, API routes, and UI.
+- **Adversarial review: GPT-5.x via the Codex CLI** (OpenAI) — critiqued both the v1 plan and the final code as an adversary, surfacing correctness defects the generator did not catch.
 
-Major prompts:
+### Major prompts and review outcomes
 
-1. _Plan, v1_ — "Design an implementation plan for a 4-hour FDE take-home: ACME Bottles, 2 products / 2 lines / 3 materials, FIFO scheduling, glassmorphism UI." (Claude)
-2. _Adversarial review of plan_ — "Find correctness bugs, missing edge cases, and deployment landmines. Focus on the FIFO scheduler with global materials, the late-detection rule, and Vercel + Prisma deploy." (Codex)
-3. _Plan, v2_ — incorporated 8 critical fixes from the Codex review: explicit `completedAt` field (not derived from ETA), separate `expectedEta` snapshot for late detection, global cursor-ordered scheduling across both lines, atomic material reservation, "Unable blocks downstream" rule, seed-not-in-build deployment.
-4. _Code generation_ — Claude wrote the codebase against the v2 plan.
-5. _Adversarial code review_ — Codex re-read the implementation for residual bugs.
+1. **Plan v1 generation** (Claude) — "Design an implementation plan for a 4-hour FDE take-home: ACME Bottles, 2 products / 2 lines / 3 materials, FIFO scheduling, glassmorphism UI."
+2. **Adversarial review of plan v1** (Codex) — "Find correctness bugs, missing edge cases, and deployment landmines. Focus on the FIFO scheduler with global materials, the late-detection rule, and Vercel + Prisma deploy."
+   - **24 issues identified, 8 of which were correctness defects** in the scheduler and status semantics that would have shipped silently.
+3. **Plan v2** — incorporated the 8 correctness fixes from the review:
+   - Replaced the v1 rule "Completed = `eta < now`" with an explicit `completedAt` field, so a "late and unfinished" PO is no longer mis-classified as Completed.
+   - Split `expectedEta` into a snapshot at PO creation, so the late badge does not self-erase as the live forecast ETA slides forward.
+   - Redefined per-line independent FIFO with a global material pool into chronological cross-line interleaving with atomic per-PO material reservation, eliminating double-booking of incoming supplies.
+   - Added the rule that an "Unable to fulfill" PO blocks all downstream POs on the same line, preserving FIFO as a hard constraint.
+   - Removed `prisma db seed` from the Vercel build pipeline to prevent data overwrite on every redeploy.
+4. **Code generation** — Claude wrote the implementation against the v2 plan.
+5. **Adversarial code review** — Codex re-read the final implementation for residual correctness or security issues.
 
-The intent: generation and review by **different model families** catch what the same model would miss in isolation — different blind spots overlap less.
+### Why this matters
+
+Single-model self-review is a known weak link in AI-assisted engineering: the same training distribution that produces an error tends to also fail to detect it. Pairing a generator with an adversary from a different model family shifts the burden of correctness onto the **intersection** of two distinct sets of blind spots. The empirical evidence in this submission is the eight non-trivial scheduler defects caught between v1 and v2 — defects that would not have surfaced under self-review by the generator alone. The pattern generalizes: any AI-authored artifact that ships should be reviewed by a model from a different family before it lands.
