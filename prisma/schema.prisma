@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Product {
+  ONE_LITER
+  ONE_GALLON
+}
+
+enum Material {
+  PET_RESIN
+  PTA
+  EG
+}
+
+model PurchaseOrder {
+  id          String    @id @default(cuid())
+  poNumber    String    @unique
+  customer    String
+  product     Product
+  quantity    Int
+  notes       String?
+  orderDate   DateTime
+  expectedEta DateTime
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([orderDate])
+}
+
+model SupplyOrder {
+  id             String   @id @default(cuid())
+  material       Material
+  quantityKg     Float
+  supplier       String
+  trackingNumber String?
+  orderDate      DateTime @default(now())
+  eta            DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([eta])
+}
