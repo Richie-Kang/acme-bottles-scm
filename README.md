@@ -1,6 +1,6 @@
 # ACME Bottles — Supply Chain & Production System
 
-Take-home for the Forward Deploy Engineer challenge. Tracks Purchase Orders and Supply Orders for a plastic bottle manufacturer (1L + 1-Gallon) and computes ETA + fulfillment status using a FIFO scheduler that respects per-line capacity AND global material availability.
+Tracks Purchase Orders and Supply Orders for a plastic bottle manufacturer (1L + 1-Gallon) and computes ETA + fulfillment status using a FIFO scheduler that respects per-line capacity AND global material availability.
 
 | | |
 |---|---|
